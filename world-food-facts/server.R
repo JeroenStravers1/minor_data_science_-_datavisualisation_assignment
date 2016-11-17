@@ -1,6 +1,3 @@
-library("shiny")
-library("treemap")
-
 tester = data.frame(n<-c(2,3,4), s<-c(3,4,5), b<-c(5,6,7))
 colnames(tester) <- c("one","two","three")
 
@@ -10,6 +7,7 @@ foodTypesAmount = nrow(foodFacts)
 # I've read that forloops in R are a bad idea. Unfortunately, I don't see 
 # any other way to split the multiple values in the additives_tags 
 # column into single values (without using Python/Java).
+
 # This is not a user-friendly dataset.
 
 # there are 1421 ENumbers* currently, with some having sub-classes (e321iii).
@@ -17,62 +15,110 @@ foodTypesAmount = nrow(foodFacts)
 # the vectors with a set length to minimize memory usage when parsing the existing
 # dataset into a usable format (it's slow enough already ;) ).
 # *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
-additiveTotalOccurence  <- rep(NA, 1777)
+additiveTotalOccurence  <- rep(0, 1777)
 additiveGoal            <- rep(NA, 1777)
-Unknown                 <- rep(NA, 1777)
-CerealPotato            <- rep(NA, 1777)
-Beverages               <- rep(NA, 1777)
-SugarySnacks            <- rep(NA, 1777)
-FruitVegetable          <- rep(NA, 1777)
-FatSaucage              <- rep(NA, 1777)
-FishMeatEggs            <- rep(NA, 1777)
-CompositeFoods          <- rep(NA, 1777)
-MilkDairy               <- rep(NA, 1777)
-SaltySnacks             <- rep(NA, 1777)
+Unknown                 <- rep(0, 1777)
+CerealPotato            <- rep(0, 1777)
+Beverage                <- rep(0, 1777)
+SugarySnacks            <- rep(0, 1777)
+FruitVegetable          <- rep(0, 1777)
+FatSauce                <- rep(0, 1777)
+FishMeatEggs            <- rep(0, 1777)
+CompositeFoods          <- rep(0, 1777)
+MilkDairy               <- rep(0, 1777)
+SaltySnacks             <- rep(0, 1777)
 
-# create the dataframe:
-#       total goal  totalPerFoodCategory  
-# eNum  x     y     zzz
 totalsPerAdditive <- data.frame(additiveTotalOccurence, 
                                 additiveGoal, Unknown, CerealPotato,
-                                Beverages, SugarySnacks, FruitVegetable,
-                                FatSaucage, FishMeatEggs, CompositeFoods,
+                                Beverage, SugarySnacks, FruitVegetable,
+                                FatSauce, FishMeatEggs, CompositeFoods,
                                 MilkDairy, SaltySnacks)
 
 unwrittenRowInTotalsPerAdditive = 1
 # add totals and additive identifiers to the dataframe
 for(i in 1:foodTypesAmount) {
-  # get additive information
+  # get additives in current food product as vector
   eNumbersInCurrentFoodType = foodFacts[i, "additives_tags"]
   if(is.na(eNumbersInCurrentFoodType) == FALSE & is.null(eNumbersInCurrentFoodType == FALSE)) {
     splitENumbersInCurrentFoodType = unlist(strsplit(eNumbersInCurrentFoodType, ","))
-    currentENumbers = length(splitENumbersInCurrentFoodType)
-    currentFoodCategory = foodFacts[i, "pnns_groups_1"]
+    additivesInCurrentProduct = length(splitENumbersInCurrentFoodType)
     
-    for(eNumber in 1:currentENumbers) {
+    # determine category of current food product, parse to value matching
+    # dataframe column names
+    currentFoodCategory = sub(" ", "", foodFacts[i, "pnns_groups_1"])
+    currentFoodCategory = sub("-", "", currentFoodCategory)
+    switch(currentFoodCategory,
+           NULL                  = {currentFoodCategory = "Unknown"},
+           unknown               = {currentFoodCategory = "Unknown"},
+           Cerealsandpotatoes    = {currentFoodCategory = "CerealPotato"},            
+           cerealsandpotatoes    = {currentFoodCategory = "CerealPotato"}, 
+           Beverages             = {currentFoodCategory = "Beverage"}, 
+           Sugarysnacks          = {currentFoodCategory = "SugarySnacks"}, 
+           sugarysnacks          = {currentFoodCategory = "SugarySnacks"}, 
+           Fruitsandvegetables   = {currentFoodCategory = "FruitVegetable"}, 
+           fruitsandvegetables   = {currentFoodCategory = "FruitVegetable"}, 
+           Fatandsauces          = {currentFoodCategory = "FatSauce"}, 
+           FishMeatEggs          = {currentFoodCategory = "FishMeatEggs"}, 
+           Compositefoods        = {currentFoodCategory = "CompositeFoods"}, 
+           Milkanddairyproducts  = {currentFoodCategory = "MilkDairy"}, 
+           Saltysnacks           = {currentFoodCategory = "SaltySnacks"}, 
+           saltysnacks           = {currentFoodCategory = "SaltySnacks"}
+    )
+
+    # loop through all additives found in this product
+    for(eNumber in 1:additivesInCurrentProduct) {
       eNumber = sub("en:", "", eNumber)
       
-      # if eNumber doesnt have a row -> add row, rowname = enumber
+      # if(!eNumber has own row): edit current 'empty' row, rowname = enumber
       if(is.na(totalsPerAdditive[eNumber, 1])) {
-        totalsPerAdditive[unwrittenRowInTotalsPerAdditive, 1] = 1
         rownames(totalsPerAdditive)[unwrittenRowInTotalsPerAdditive] = eNumber
         unwrittenRowInTotalsPerAdditive = unwrittenRowInTotalsPerAdditive + 1
       }
       
-      # do group determination here
+      # increment times additive found, total and per food category
+      totalsPerAdditive[eNumber, "additiveTotalOccurence"] = 
+        totalsPerAdditive[eNumber, "additiveTotalOccurence"] + 1
+      totalsPerAdditive[eNumber, currentFoodCategory] = 
+        totalsPerAdditive[eNumber, currentFoodCategory] + 1
       
+      # determine and append goal* of additive addition
+      # *based on *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
+      numericAdditiveCode = sub("e", "", eNumber)
+      eNumConsistsOfDigits = grepl('^[0-9]+$', numericAdditiveCode)
+      
+      # remove additions (letters a-e, v, i; 345v, 653d)
+      if(eNumConsistsOfDigits == FALSE) {
+        numericAdditiveCode = gsub('[a-z]+', '', numericAdditiveCode)
+        # account for '14xx' additive code
+        if(numericAdditiveCode == "14") {
+          numericAdditiveCode = "1400"
+        }
+      }
+      
+      # interpret additive goal based on its numeric code
+      numericAdditiveCode = as.integer(numericAdditiveCode)
+      currentAdditiveGoal = ""
+      
+      if(numericAdditiveCode < 200) {
+        currentAdditiveGoal = "Kleuring"
+      } else if (numericAdditiveCode < 400) { #*
+        currentAdditiveGoal = "Conservering"
+      } else if (numericAdditiveCode < 500) {
+        currentAdditiveGoal = "Verdikking"
+      } else if (numericAdditiveCode < 586) {
+        currentAdditiveGoal = "Zuurte/klontering/rijsmiddel"
+      } else if (numericAdditiveCode < 700) {
+        currentAdditiveGoal = "Smaakversterking"
+      } else {
+        currentAdditiveGoal = "Zoetstof/cosmetisch"
+      }
+      # * I merged antioxidants with conservatives/acids, since they serve
+      # the same purpose (preservation)
     }
   }
-  # for string in splitString
-  #totalsPerAdditive[string] += 1
 }
 
 
-#data <- read.csv(file = "FoodFacts.csv", na.strings =c("", "NA"))
-
-# need a table/df: category (~_pnn_1)
-#         E0001   n   "fish meat eggs" "additive_goal"
-#         E0002   n
 
 function(input, output) {
   
