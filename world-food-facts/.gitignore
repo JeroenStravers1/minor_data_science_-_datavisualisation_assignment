@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+database.sqlite
+FoodFacts.csv
+hashes.txt
+world-food-facts.Rproj
