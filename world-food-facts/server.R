@@ -100,19 +100,19 @@ for(i in 1:foodTypesAmount) {
       currentAdditiveGoal = ""
       
       if(numericAdditiveCode < 200) {
-        currentAdditiveGoal = "Kleuring"
+        currentAdditiveGoal = "Colorant"
       } else if (numericAdditiveCode < 400) { #*
-        currentAdditiveGoal = "Conservering"
+        currentAdditiveGoal = "Conservatives"
       } else if (numericAdditiveCode < 500) {
-        currentAdditiveGoal = "Verdikking"
+        currentAdditiveGoal = "Thickeners"
       } else if (numericAdditiveCode < 586) {
-        currentAdditiveGoal = "Zuurte/klontering/rijsmiddel"
+        currentAdditiveGoal = "Acidity/Clotting/Fermentation"
       } else if (numericAdditiveCode < 700) {
-        currentAdditiveGoal = "Smaakversterking"
+        currentAdditiveGoal = "Flavouring"
       } else {
-        currentAdditiveGoal = "Zoetstof/cosmetisch"
+        currentAdditiveGoal = "Sweetening/Cosmetic"
       }
-      # * I merged antioxidants with conservatives/acids, since they serve
+      # * I merged antioxidants with conservatives/acids, they serve
       # the same purpose (preservation)
     }
   }
@@ -135,5 +135,15 @@ function(input, output) {
       type="value"
     )
   })
+  
+  #output$treemap <- renderPlot({
+   # tm <-  treemap(
+    #  totalsPerAdditive,
+     # index=c("three", "two"),
+      #vSize="two",
+      #vColor="one",
+      #type="value"
+  #)
+  #})
 
 }
