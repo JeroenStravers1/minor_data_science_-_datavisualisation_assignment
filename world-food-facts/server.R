@@ -1,20 +1,21 @@
-tester = data.frame(n<-c(2,3,4), s<-c(3,4,5), b<-c(5,6,7))
-colnames(tester) <- c("one","two","three")
 
 foodFacts <- read.csv("FoodFacts.csv")
 foodTypesAmount = nrow(foodFacts)
 
-# I've read that forloops in R are a bad idea. Unfortunately, I don't see 
+# I've read that for-loops in R are a bad idea. Unfortunately, I don't see 
 # any other way to split the multiple values in the additives_tags 
-# column into single values (without using Python/Java).
+# column into single values (without using Python/Java; I wanted to limit myself to R. Using
+# another programming language to preprocess the dataset would give me an even more unfair advantage
+# over my non-computer science-studying fellow students than my prior experience in programming 
+# already does).
 
-# This is not a user-friendly dataset.
+# That said, this is not a user-friendly dataset.
 
 # there are 1421 ENumbers* currently, with some having sub-classes (e321iii).
-# I took a margin of 25% for this. 1421 * 1.25 = 1776.25. I need to initialize
+# I took a margin of 25% to compensate for this. 1421 * 1.25 = 1776.25. I need to initialize
 # the vectors with a set length to minimize memory usage when parsing the existing
-# dataset into a usable format (it's slow enough already ;) ).
-# *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
+# dataset into a usable format (it's slow enough already!).
+# *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/ (1521 - 100)
 additiveTotalOccurence  <- rep(0, 1777)
 additiveGoal            <- rep(NA, 1777)
 additiveIdentifier      <- rep(NA, 1777)
@@ -128,36 +129,89 @@ for(i in 1:foodTypesAmount) {
   }
 }
 
+# get only rows that contain data (prevent empty rows from showing up in plots)
+filteredFoodTotals <- subset(totalsPerAdditive, additiveIdentifier != "")
+
 
 function(input, output) {
   
-  #read csv test
-  #output$readDataset <- read.csv
+  output$treemapTitle <- renderText({
+    "Distribution of additive use clustered by goal of additive use"
+  })
   
-  #treemap test --> WORKS
-  #output$treemap <- renderPlot({
-   # tm <-  treemap(
-    #  tester,
-     # index=c("three", "two"),
-      #vSize="two",
-      #vColor="one",
-      #type="value"
-    #)
-  #})
-  
-  output$treemap <- renderPlot({
-    tm <-  treemap(
-      totalsPerAdditive,
+  output$additiveGoalsTreemap <- renderPlot({
+    
+    treemap(
+      filteredFoodTotals,
       index=c("additiveGoal", "additiveIdentifier"),
       vSize="additiveTotalOccurence",
       vColor="additiveTotalOccurence",
       type="value"
-  )
+    )
   })
   
-  #output$testdf <- renderDataTable(totalsPerAdditive,
-  #               options = list (
-  #                 pageLength = 20
-  #               )
-  #            )
+  
+  output$additivesPerFoodtypeBarChart <- renderPlot({
+    
+    freqUnknown               <- sum(filteredFoodTotals$Unknown)
+    freqCerealsAndPotatoes    <- sum(filteredFoodTotals$CerealsAndPotatoes)
+    freqBeverages             <- sum(filteredFoodTotals$Beverages)
+    freqSugarySnacks          <- sum(filteredFoodTotals$SugarySnacks)
+    freqFruitsAndVegetables   <- sum(filteredFoodTotals$FruitsAndVegetables)
+    freqFatAndSauces          <- sum(filteredFoodTotals$FatAndSauces)
+    freqFishMeatEggs          <- sum(filteredFoodTotals$FishMeatEggs)
+    freqCompositeFoods        <- sum(filteredFoodTotals$CompositeFoods)
+    freqMilkAndDairy          <- sum(filteredFoodTotals$MilkAndDairy)
+    freqSaltySnacks           <- sum(filteredFoodTotals$SaltySnacks)
+    
+    frequencyPerCategory <- c(freqUnknown, freqCerealsAndPotatoes, freqBeverages, 
+                              freqSugarySnacks, freqFruitsAndVegetables, freqFatAndSauces, 
+                              freqFishMeatEggs, freqCompositeFoods, freqMilkAndDairy,
+                              freqSaltySnacks)
+    
+    additivesFoodCategories <- data.frame(foodCategories, frequencyPerCategory)
+    
+    ggplot(additivesFoodCategories, aes(x = foodCategories, y = frequencyPerCategory)) +
+      geom_bar(stat = "identity") +
+      geom_text(aes(label = sprintf("%.2f%%", frequencyPerCategory/sum(frequencyPerCategory) * 100)), 
+                vjust = -.5) + 
+      ggtitle("Relative and absolute distribution of total\nnumber of added additives per food category") + 
+      theme(plot.title = element_text(lineheight=.8, face="bold"))
+  })
+  
+  
+  output$additiveGoalSpreadPerFoodCategoryBarChart <- renderPlot({
+    
+    goalsPerChosenFoodCategory <- subset(filteredFoodTotals, filteredFoodTotals$additiveGoal == input$selectAdditiveGoal)
+    
+    goalUnknown               <- sum(goalsPerChosenFoodCategory$Unknown)
+    goalCerealsAndPotatoes    <- sum(goalsPerChosenFoodCategory$CerealsAndPotatoes)
+    goalBeverages             <- sum(goalsPerChosenFoodCategory$Beverages)
+    goalSugarySnacks          <- sum(goalsPerChosenFoodCategory$SugarySnacks)
+    goalFruitsAndVegetables   <- sum(goalsPerChosenFoodCategory$FruitsAndVegetables)
+    goalFatAndSauces          <- sum(goalsPerChosenFoodCategory$FatAndSauces)
+    goalFishMeatEggs          <- sum(goalsPerChosenFoodCategory$FishMeatEggs)
+    goalCompositeFoods        <- sum(goalsPerChosenFoodCategory$CompositeFoods)
+    goalMilkAndDairy          <- sum(goalsPerChosenFoodCategory$MilkAndDairy)
+    goalSaltySnacks           <- sum(goalsPerChosenFoodCategory$SaltySnacks)
+    
+    summedGoalFoodCategories <- c(goalUnknown, goalCerealsAndPotatoes, goalBeverages,
+                                  goalSugarySnacks, goalFruitsAndVegetables, goalFatAndSauces,
+                                  goalFishMeatEggs, goalCompositeFoods, goalMilkAndDairy,
+                                  goalSaltySnacks)
+    
+    relativeGoalFoodCategories <- prop.table(summedGoalFoodCategories)
+
+    barplot(relativeGoalFoodCategories, names.arg=foodCategories, 
+            cex.names=0.75, las=1, xlab="categories of food", ylab="percentages",
+            main="Relative distribution of additives by goal of addition over categories of food",
+            col=c("antiquewhite1","aquamarine2","coral1","chartreuse3","cadetblue1","chocolate1",
+                  "darkgoldenrod1","blueviolet","darkseagreen2","brown3"))
+  })
+  
+  
+  output$displayDisclaimer <- renderText({
+    "***all graphs are based on the World Food Fact dataset from Kaggle, retrieved on 19 november 2016
+    from https://www.kaggle.com/openfoodfacts/world-food-facts"
+  })
 }

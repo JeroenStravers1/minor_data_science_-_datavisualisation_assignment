@@ -11,3 +11,7 @@ An R Shiny app using the world food fact dataset from Kaggle. Make sure the data
 # My assignment:
 
 Answer the following question: "Which additives are applied the most? Make categories of reasons to add additives (improve flavour, mask decay, extend Best Before Date, ...)"
+
+I answered this question with a Treemap, I based the additive categories on information found online*. I added barplots to allow the user to further explore the usage of additives in different food categories.
+ 
+*http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/ (also available in english)
