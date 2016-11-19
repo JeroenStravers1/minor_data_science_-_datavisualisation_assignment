@@ -4,5 +4,6 @@
 .Ruserdata
 database.sqlite
 FoodFacts.csv
+FoodFactsbackup.csv
 hashes.txt
 world-food-facts.Rproj

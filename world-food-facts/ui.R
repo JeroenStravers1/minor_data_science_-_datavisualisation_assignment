@@ -4,9 +4,14 @@ fluidPage(
   label = "Choose a number",
   value = 25, min = 1, max = 100),
 
-  plotOutput("treemap")
-  ,getwd()
+  #plotOutput("treemap")
+  #,getwd()
   
+  fluidRow(
+    column(12,
+           dataTableOutput('testdf')
+    )
+  )
 )
 
 # start with a treemap displaying E-numbers - categories

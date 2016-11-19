@@ -18,68 +18,75 @@ foodTypesAmount = nrow(foodFacts)
 additiveTotalOccurence  <- rep(0, 1777)
 additiveGoal            <- rep(NA, 1777)
 Unknown                 <- rep(0, 1777)
-CerealPotato            <- rep(0, 1777)
-Beverage                <- rep(0, 1777)
+CerealsAndPotatoes      <- rep(0, 1777)
+Beverages               <- rep(0, 1777)
 SugarySnacks            <- rep(0, 1777)
-FruitVegetable          <- rep(0, 1777)
-FatSauce                <- rep(0, 1777)
+FruitsAndVegetables     <- rep(0, 1777)
+FatAndSauces            <- rep(0, 1777)
 FishMeatEggs            <- rep(0, 1777)
 CompositeFoods          <- rep(0, 1777)
-MilkDairy               <- rep(0, 1777)
+MilkAndDairy            <- rep(0, 1777)
 SaltySnacks             <- rep(0, 1777)
+additiveRowNumber       <- rep(0, 1777)
 
-totalsPerAdditive <- data.frame(additiveTotalOccurence, 
+totalsPerAdditive <- data.frame(additiveTotalOccurence,
                                 additiveGoal, Unknown, CerealPotato,
                                 Beverage, SugarySnacks, FruitVegetable,
                                 FatSauce, FishMeatEggs, CompositeFoods,
                                 MilkDairy, SaltySnacks)
+totalsLookupTable <- data.frame(additiveRowNumber) 
+#* R mistakes totalsPerAdditive["e170", "FatSauce"] <- totalsPerAdditive["e170", "FatSauce"] + 1 as me trying to set a rowname as "e170", throwing
+# an error. The lookup table circumvents this problem.
 
 unwrittenRowInTotalsPerAdditive = 1
+
 # add totals and additive identifiers to the dataframe
 for(i in 1:foodTypesAmount) {
+  
   # get additives in current food product as vector
-  eNumbersInCurrentFoodType = foodFacts[i, "additives_tags"]
-  if(is.na(eNumbersInCurrentFoodType) == FALSE & is.null(eNumbersInCurrentFoodType == FALSE)) {
+  eNumbersInCurrentFoodType <- toString(foodFacts[i, "additives_tags"])
+                
+  if(is.na(eNumbersInCurrentFoodType) == FALSE & is.null(eNumbersInCurrentFoodType) == FALSE & (eNumbersInCurrentFoodType != "") == TRUE) {
     splitENumbersInCurrentFoodType = unlist(strsplit(eNumbersInCurrentFoodType, ","))
     additivesInCurrentProduct = length(splitENumbersInCurrentFoodType)
     
     # determine category of current food product, parse to value matching
     # dataframe column names
-    currentFoodCategory = sub(" ", "", foodFacts[i, "pnns_groups_1"])
-    currentFoodCategory = sub("-", "", currentFoodCategory)
+    spacelessCurrentFoodCategory = gsub(" ", "", foodFacts[i, "pnns_groups_1"])
+    currentFoodCategory = gsub("-", "", spacelessCurrentFoodCategory)
     switch(currentFoodCategory,
-           NULL                  = {currentFoodCategory = "Unknown"},
-           unknown               = {currentFoodCategory = "Unknown"},
-           Cerealsandpotatoes    = {currentFoodCategory = "CerealPotato"},            
-           cerealsandpotatoes    = {currentFoodCategory = "CerealPotato"}, 
-           Beverages             = {currentFoodCategory = "Beverage"}, 
-           Sugarysnacks          = {currentFoodCategory = "SugarySnacks"}, 
-           sugarysnacks          = {currentFoodCategory = "SugarySnacks"}, 
-           Fruitsandvegetables   = {currentFoodCategory = "FruitVegetable"}, 
-           fruitsandvegetables   = {currentFoodCategory = "FruitVegetable"}, 
-           Fatandsauces          = {currentFoodCategory = "FatSauce"}, 
-           FishMeatEggs          = {currentFoodCategory = "FishMeatEggs"}, 
-           Compositefoods        = {currentFoodCategory = "CompositeFoods"}, 
-           Milkanddairyproducts  = {currentFoodCategory = "MilkDairy"}, 
-           Saltysnacks           = {currentFoodCategory = "SaltySnacks"}, 
-           saltysnacks           = {currentFoodCategory = "SaltySnacks"}
+           NULL                  = {currentFoodCategory <- "Unknown"},
+           unknown               = {currentFoodCategory <- "Unknown"},
+           Cerealsandpotatoes    = {currentFoodCategory <- "CerealsAndPotatoes"},            
+           cerealsandpotatoes    = {currentFoodCategory <- "CerealsAndPotatoes"}, 
+           Beverages             = {currentFoodCategory <- "Beverages"}, 
+           Sugarysnacks          = {currentFoodCategory <- "SugarySnacks"}, 
+           sugarysnacks          = {currentFoodCategory <- "SugarySnacks"}, 
+           Fruitsandvegetables   = {currentFoodCategory <- "FruitsAndVegetables"}, 
+           fruitsandvegetables   = {currentFoodCategory <- "FruitsAndVegetables"}, 
+           Fatandsauces          = {currentFoodCategory <- "FatAndSauces"}, 
+           FishMeatEggs          = {currentFoodCategory <- "FishMeatEggs"}, 
+           Compositefoods        = {currentFoodCategory <- "CompositeFoods"}, 
+           Milkanddairyproducts  = {currentFoodCategory <- "MilkAndDairy"}, 
+           Saltysnacks           = {currentFoodCategory <- "SaltySnacks"}, 
+           saltysnacks           = {currentFoodCategory <- "SaltySnacks"}
     )
 
     # loop through all additives found in this product
-    for(eNumber in 1:additivesInCurrentProduct) {
-      eNumber = sub("en:", "", eNumber)
+    for(rawENumber in 1:additivesInCurrentProduct) {
+      eNumber = sub("en:", "", splitENumbersInCurrentFoodType[rawENumber])
       
-      # if(!eNumber has own row): edit current 'empty' row, rowname = enumber
-      if(is.na(totalsPerAdditive[eNumber, 1])) {
-        rownames(totalsPerAdditive)[unwrittenRowInTotalsPerAdditive] = eNumber
-        unwrittenRowInTotalsPerAdditive = unwrittenRowInTotalsPerAdditive + 1
+      # if(!eNumber has own row): edit current 'empty' row, rowname = enumber for lookup
+      if(is.na(totalsLookupTable[eNumber, 1])) {
+        rownames(totalsLookupTable)[unwrittenRowInTotalsPerAdditive] <- eNumber
+        totalsLookupTable[unwrittenRowInTotalsPerAdditive, 1] <- unwrittenRowInTotalsPerAdditive
+        unwrittenRowInTotalsPerAdditive <- unwrittenRowInTotalsPerAdditive + 1
       }
       
-      # increment times additive found, total and per food category
-      totalsPerAdditive[eNumber, "additiveTotalOccurence"] = 
-        totalsPerAdditive[eNumber, "additiveTotalOccurence"] + 1
-      totalsPerAdditive[eNumber, currentFoodCategory] = 
-        totalsPerAdditive[eNumber, currentFoodCategory] + 1
+      # increment additive (total and foodcategory-specific totals)
+      currentAdditiveRow <- totalsLookupTable[eNumber, 1]
+      totalsPerAdditive[currentAdditiveRow, "additiveTotalOccurence"] <- totalsPerAdditive[currentAdditiveRow, "additiveTotalOccurence"] + 1
+      totalsPerAdditive[currentAdditiveRow, currentFoodCategory] = totalsPerAdditive[currentAdditiveRow, currentFoodCategory] + 1
       
       # determine and append goal* of additive addition
       # *based on *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
@@ -89,7 +96,7 @@ for(i in 1:foodTypesAmount) {
       # remove additions (letters a-e, v, i; 345v, 653d)
       if(eNumConsistsOfDigits == FALSE) {
         numericAdditiveCode = gsub('[a-z]+', '', numericAdditiveCode)
-        # account for '14xx' additive code
+      # account for '14xx' additive code
         if(numericAdditiveCode == "14") {
           numericAdditiveCode = "1400"
         }
@@ -114,10 +121,11 @@ for(i in 1:foodTypesAmount) {
       }
       # * I merged antioxidants with conservatives/acids, they serve
       # the same purpose (preservation)
+      
+      totalsPerAdditive[currentAdditiveRow, "additiveGoal"] <- currentAdditiveGoal
     }
   }
 }
-
 
 
 function(input, output) {
@@ -126,24 +134,29 @@ function(input, output) {
   #output$readDataset <- read.csv
   
   #treemap test --> WORKS
-  output$treemap <- renderPlot({
-    tm <-  treemap(
-      tester,
-      index=c("three", "two"),
-      vSize="two",
-      vColor="one",
-      type="value"
-    )
-  })
-  
   #output$treemap <- renderPlot({
    # tm <-  treemap(
-    #  totalsPerAdditive,
+    #  tester,
      # index=c("three", "two"),
       #vSize="two",
       #vColor="one",
       #type="value"
+    #)
+  #})
+  
+  #output$treemap <- renderPlot({
+   # tm <-  treemap(
+    #  totalsPerAdditiveFiltered,
+     # index=c("additiveGoal", "additiveIdentifier"),
+      #vSize="additiveTotalOccurence",
+      #vColor="additiveTotalOccurence",
+      #type="value"
   #)
   #})
-
+  
+  output$testdf <- renderDataTable(totalsPerAdditive,
+                 options = list (
+                   pageLength = 20
+                 )
+              )
 }
