@@ -17,6 +17,7 @@ foodTypesAmount = nrow(foodFacts)
 # *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
 additiveTotalOccurence  <- rep(0, 1777)
 additiveGoal            <- rep(NA, 1777)
+additiveIdentifier      <- rep(NA, 1777)
 Unknown                 <- rep(0, 1777)
 CerealsAndPotatoes      <- rep(0, 1777)
 Beverages               <- rep(0, 1777)
@@ -29,11 +30,11 @@ MilkAndDairy            <- rep(0, 1777)
 SaltySnacks             <- rep(0, 1777)
 additiveRowNumber       <- rep(0, 1777)
 
-totalsPerAdditive <- data.frame(additiveTotalOccurence,
-                                additiveGoal, Unknown, CerealPotato,
-                                Beverage, SugarySnacks, FruitVegetable,
-                                FatSauce, FishMeatEggs, CompositeFoods,
-                                MilkDairy, SaltySnacks)
+totalsPerAdditive <- data.frame(additiveIdentifier, additiveTotalOccurence,
+                                additiveGoal, Unknown, CerealsAndPotatoes,
+                                Beverages, SugarySnacks, FruitsAndVegetables,
+                                FatAndSauces, FishMeatEggs, CompositeFoods,
+                                MilkAndDairy, SaltySnacks)
 totalsLookupTable <- data.frame(additiveRowNumber) 
 #* R mistakes totalsPerAdditive["e170", "FatSauce"] <- totalsPerAdditive["e170", "FatSauce"] + 1 as me trying to set a rowname as "e170", throwing
 # an error. The lookup table circumvents this problem.
@@ -80,6 +81,42 @@ for(i in 1:foodTypesAmount) {
       if(is.na(totalsLookupTable[eNumber, 1])) {
         rownames(totalsLookupTable)[unwrittenRowInTotalsPerAdditive] <- eNumber
         totalsLookupTable[unwrittenRowInTotalsPerAdditive, 1] <- unwrittenRowInTotalsPerAdditive
+        totalsPerAdditive[unwrittenRowInTotalsPerAdditive, "additiveIdentifier"] <- eNumber
+        # determine and append goal* of additive addition
+        # *based on *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
+        numericAdditiveCode = sub("e", "", eNumber)
+        eNumConsistsOfDigits = grepl('^[0-9]+$', numericAdditiveCode)
+        
+        # remove additions (letters a-e, v, i; 345v, 653d)
+        if(eNumConsistsOfDigits == FALSE) {
+          numericAdditiveCode = gsub('[a-z]+', '', numericAdditiveCode)
+          # account for '14xx' additive code
+          if(numericAdditiveCode == "14") {
+            numericAdditiveCode = "1400"
+          }
+        }
+        
+        # interpret additive goal based on its numeric code
+        numericAdditiveCode = as.integer(numericAdditiveCode)
+        currentAdditiveGoal = ""
+        
+        if(numericAdditiveCode < 200) {
+          currentAdditiveGoal = "Colorant"
+        } else if (numericAdditiveCode < 400) { #*
+          currentAdditiveGoal = "Conservatives"
+        } else if (numericAdditiveCode < 500) {
+          currentAdditiveGoal = "Thickeners"
+        } else if (numericAdditiveCode < 586) {
+          currentAdditiveGoal = "Acid/Clot/Ferment"
+        } else if (numericAdditiveCode < 700) {
+          currentAdditiveGoal = "Flavouring"
+        } else {
+          currentAdditiveGoal = "Sweetening/Cosmetic"
+        }
+        # * I merged antioxidants with conservatives/acids, they serve
+        # the same purpose (preservation)
+        
+        totalsPerAdditive[unwrittenRowInTotalsPerAdditive, "additiveGoal"] <- currentAdditiveGoal
         unwrittenRowInTotalsPerAdditive <- unwrittenRowInTotalsPerAdditive + 1
       }
       
@@ -87,42 +124,6 @@ for(i in 1:foodTypesAmount) {
       currentAdditiveRow <- totalsLookupTable[eNumber, 1]
       totalsPerAdditive[currentAdditiveRow, "additiveTotalOccurence"] <- totalsPerAdditive[currentAdditiveRow, "additiveTotalOccurence"] + 1
       totalsPerAdditive[currentAdditiveRow, currentFoodCategory] = totalsPerAdditive[currentAdditiveRow, currentFoodCategory] + 1
-      
-      # determine and append goal* of additive addition
-      # *based on *http://www.e-nummers-lijst.nl/en_US/e-nummers-lijst/
-      numericAdditiveCode = sub("e", "", eNumber)
-      eNumConsistsOfDigits = grepl('^[0-9]+$', numericAdditiveCode)
-      
-      # remove additions (letters a-e, v, i; 345v, 653d)
-      if(eNumConsistsOfDigits == FALSE) {
-        numericAdditiveCode = gsub('[a-z]+', '', numericAdditiveCode)
-      # account for '14xx' additive code
-        if(numericAdditiveCode == "14") {
-          numericAdditiveCode = "1400"
-        }
-      }
-      
-      # interpret additive goal based on its numeric code
-      numericAdditiveCode = as.integer(numericAdditiveCode)
-      currentAdditiveGoal = ""
-      
-      if(numericAdditiveCode < 200) {
-        currentAdditiveGoal = "Colorant"
-      } else if (numericAdditiveCode < 400) { #*
-        currentAdditiveGoal = "Conservatives"
-      } else if (numericAdditiveCode < 500) {
-        currentAdditiveGoal = "Thickeners"
-      } else if (numericAdditiveCode < 586) {
-        currentAdditiveGoal = "Acidity/Clotting/Fermentation"
-      } else if (numericAdditiveCode < 700) {
-        currentAdditiveGoal = "Flavouring"
-      } else {
-        currentAdditiveGoal = "Sweetening/Cosmetic"
-      }
-      # * I merged antioxidants with conservatives/acids, they serve
-      # the same purpose (preservation)
-      
-      totalsPerAdditive[currentAdditiveRow, "additiveGoal"] <- currentAdditiveGoal
     }
   }
 }
@@ -144,19 +145,19 @@ function(input, output) {
     #)
   #})
   
-  #output$treemap <- renderPlot({
-   # tm <-  treemap(
-    #  totalsPerAdditiveFiltered,
-     # index=c("additiveGoal", "additiveIdentifier"),
-      #vSize="additiveTotalOccurence",
-      #vColor="additiveTotalOccurence",
-      #type="value"
-  #)
-  #})
+  output$treemap <- renderPlot({
+    tm <-  treemap(
+      totalsPerAdditive,
+      index=c("additiveGoal", "additiveIdentifier"),
+      vSize="additiveTotalOccurence",
+      vColor="additiveTotalOccurence",
+      type="value"
+  )
+  })
   
-  output$testdf <- renderDataTable(totalsPerAdditive,
-                 options = list (
-                   pageLength = 20
-                 )
-              )
+  #output$testdf <- renderDataTable(totalsPerAdditive,
+  #               options = list (
+  #                 pageLength = 20
+  #               )
+  #            )
 }
